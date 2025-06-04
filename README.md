@@ -26,3 +26,39 @@ You can get started using the following steps:
   8. When you are done with your tests, run `eb terminate --all` to clean up.
 
 *Note: Running Locust in distributed mode requires a master/slave architecture. This sample requires that the auto scaling minimum and maximum be set to the same value to ensure that the master isn't terminated by auto scaling. If for some reason the master instance is replaced, an `eb deploy` should be all it takes to fix it.*
+
+
+
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Server 1      │    │   Server 2      │    │   Server 3      │
+│   (MASTER)      │    │   (WORKER)      │    │   (WORKER)      │
+│                 │    │                 │    │                 │
+│ ┌─────────────┐ │    │ ┌─────────────┐ │    │ ┌─────────────┐ │
+│ │ 1x Master   │ │◄───┤ │ 2x Workers  │ │    │ │ 2x Workers  │ │
+│ │ 1x Worker   │ │    │ │             │ │    │ │             │ │
+│ │ (Web UI)    │ │    │ │             │ │    │ │             │ │
+│ └─────────────┘ │    │ └─────────────┘ │    │ └─────────────┘ │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                ▲                        ▲
+                                │                        │
+┌─────────────────┐             │          ┌─────────────────┐
+│   Server 4      │             │          │   Server 5      │
+│   (WORKER)      │             │          │   (WORKER)      │
+│                 │             │          │                 │
+│ ┌─────────────┐ │             │          │ ┌─────────────┐ │
+│ │ 2x Workers  │ │─────────────┼──────────┤ │ 2x Workers  │ │
+│ │             │ │             │          │ │             │ │
+│ └─────────────┘ │             │          │ └─────────────┘ │
+└─────────────────┘             │          └─────────────────┘
+                                │
+┌─────────────────┐             │          ┌─────────────────┐
+│   Server 6      │             │          │   Server 7      │
+│   (WORKER)      │             │          │   (WORKER)      │
+│                 │             │          │                 │
+│ ┌─────────────┐ │             │          │ ┌─────────────┐ │
+│ │ 2x Workers  │ │─────────────┘          │ │ 2x Workers  │ │
+│ │             │ │                        │ │             │ │
+│ └─────────────┘ │                        │ └─────────────┘ │
+└─────────────────┘                        └─────────────────┘
+
+Total: 1 Master + 13 Workers (assuming 2-core instances)

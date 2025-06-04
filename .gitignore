@@ -19,3 +19,5 @@ locustfile.pyc
 .idea/eb-locustio-sample.iml
 
 __pycache__
+
+.vscode

@@ -17,7 +17,7 @@ import logging
 import json
 import datetime
 
-from locust import HttpLocust, TaskSet, task
+from locust import HttpLocust, task, between
 from threading import Timer
 
 logging.basicConfig(level=logging.INFO)
@@ -51,7 +51,7 @@ problem_codes = {
 }
 
 def signup(l):
-    random_user = random.randint(1,sys.maxint)
+    random_user = random.randint(1,sys.maxsize)
     response = l.client.post("/test/a/load_test/", {
         "candidate_email": "loadtestinterviewbit+" + str(random_user) +  "@gmail.com",
         "password": '12ABXYZ12',
@@ -85,96 +85,96 @@ def logout(l):
 def check_status(l, test_id, problem_id, submission_id):
     response = l.client.get("/test/" + str(test_id) + "/status/?problem_id=" + str(problem_id) + "&submission_id=" + str(submission_id))
 
-class MyTaskSet(TaskSet):
+# class MyTaskSet(task):
     
-    def on_start(self):
-        signup(self)
+#     def on_start(self):
+#         signup(self)
 
-    def on_stop(self):
-        logout(self)
+#     def on_stop(self):
+#         logout(self)
 
-    #open the test programming_language_id
-    @task(6)
-    def index(self):    
-        response = self.client.get("/test/" + test_id + '/')
+#     #open the test programming_language_id
+#     @task(6)
+#     def index(self):    
+#         response = self.client.get("/test/" + test_id + '/')
 
-    #record event
-    @task(33)
-    def record_event(self):
-        response = self.client.post("/test/" + test_id + '/record-event/',{
-            "event_type": "jhsdfgjdsf",
-            "event_value": "kjdkjdhfgkjdfhgifderiuy eiruty idufgy difuyg",
-            "timestamp": datetime.datetime.now()
-        })
+#     #record event
+#     @task(33)
+#     def record_event(self):
+#         response = self.client.post("/test/" + test_id + '/record-event/',{
+#             "event_type": "jhsdfgjdsf",
+#             "event_value": "kjdkjdhfgkjdfhgifderiuy eiruty idufgy difuyg",
+#             "timestamp": datetime.datetime.now()
+#         })
 
-    #mark problem opened
-    @task(13)
-    def mark_problem_opened(self):
-        problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
-        response = self.client.post("/test/" + str(test_id) + "/mark-problem-opened/",{
-            "problem_id": problem_id
-        })
+#     #mark problem opened
+#     @task(13)
+#     def mark_problem_opened(self):
+#         problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
+#         response = self.client.post("/test/" + str(test_id) + "/mark-problem-opened/",{
+#             "problem_id": problem_id
+#         })
 
-    #get live problems
-    @task(6)
-    def get_live_problems(self):
-        response = self.client.get("/test/" + str(test_id) + "/live-problems/")
+#     #get live problems
+#     @task(6)
+#     def get_live_problems(self):
+#         response = self.client.get("/test/" + str(test_id) + "/live-problems/")
 
-    #fetch code
-    @task(22)
-    def fetch_code(self):    
-        problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
-        supported_languages = problem_language_id_map[problem_id]
-        programming_language_id = supported_languages[random.randint(0,(len(supported_languages) - 1))]
-        response = self.client.get("/test/" + str(test_id) + "/get-code/?programming_language_id=" + str(programming_language_id) + "&problem_id=" + str(problem_id))
+#     #fetch code
+#     @task(22)
+#     def fetch_code(self):    
+#         problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
+#         supported_languages = problem_language_id_map[problem_id]
+#         programming_language_id = supported_languages[random.randint(0,(len(supported_languages) - 1))]
+#         response = self.client.get("/test/" + str(test_id) + "/get-code/?programming_language_id=" + str(programming_language_id) + "&problem_id=" + str(problem_id))
 
-    # #save code
-    @task(52)
-    def save_code(self):
-        problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
-        supported_languages = problem_language_id_map[problem_id]
-        programming_language_id = 511#supported_languages[random.randint(0,(len(supported_languages) - 1))]
-        response = self.client.post("/test/" + str(test_id) + "/save-code/", {
-            "problem_id": problem_id, 
-            "programming_language_id": 511,
-            "is_objective": 'false',
-            "problem_code": problem_codes[problem_id][random.choice(random_matrix)]
-        })
+#     # #save code
+#     @task(52)
+#     def save_code(self):
+#         problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
+#         supported_languages = problem_language_id_map[problem_id]
+#         programming_language_id = 511#supported_languages[random.randint(0,(len(supported_languages) - 1))]
+#         response = self.client.post("/test/" + str(test_id) + "/save-code/", {
+#             "problem_id": problem_id, 
+#             "programming_language_id": 511,
+#             "is_objective": 'false',
+#             "problem_code": problem_codes[problem_id][random.choice(random_matrix)]
+#         })
 
-    # #Submit Code
-    @task(22)
-    def submit_code(self):
-        problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
-        supported_languages = problem_language_id_map[problem_id]
-        programming_language_id = supported_languages[random.randint(0,(len(supported_languages) - 1))]
+#     # #Submit Code
+#     @task(22)
+#     def submit_code(self):
+#         problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
+#         supported_languages = problem_language_id_map[problem_id]
+#         programming_language_id = supported_languages[random.randint(0,(len(supported_languages) - 1))]
 
-        response = self.client.post("/test/" + test_id + "/evaluate-code/", {
-            "problem_id": problem_id, 
-            "programming_language_id": 511,
-            "submission_content": problem_codes[problem_id][random.choice(random_matrix)],
-            "submission_type": 'submit'
-        }, {
-            'X-Requested-With': 'XMLHttpRequest'
-        })        
-        logger.info(response.content)
-        resp_json = json.loads(response.content)
+#         response = self.client.post("/test/" + test_id + "/evaluate-code/", {
+#             "problem_id": problem_id, 
+#             "programming_language_id": 511,
+#             "submission_content": problem_codes[problem_id][random.choice(random_matrix)],
+#             "submission_type": 'submit'
+#         }, {
+#             'X-Requested-With': 'XMLHttpRequest'
+#         })        
+#         logger.info(response.content)
+#         resp_json = json.loads(response.content)
 
-        r = Timer(10, check_status, (self, test_id, problem_id, resp_json['submission_id']))
-        r.start()
-        #for i in range(1,30):
-            #check_status(self, test_id, problem_id, resp_json['submission_id'])
-            #r = Timer(i, check_status, (self, test_id, problem_id, resp_json['submission_id']))
-            #r.start()
+#         r = Timer(10, check_status, (self, test_id, problem_id, resp_json['submission_id']))
+#         r.start()
+#         #for i in range(1,30):
+#             #check_status(self, test_id, problem_id, resp_json['submission_id'])
+#             #r = Timer(i, check_status, (self, test_id, problem_id, resp_json['submission_id']))
+#             #r.start()
 
-    #get submission status
-    #@task(2400)
-    #def submission_status(self):                    
-        #response = self.client.get("/test/" + str(test_id) + "/status/?problem_id=" + str(problem_id) + "&submission_id=" + str(response.submission_id))        
+#     #get submission status
+#     #@task(2400)
+#     #def submission_status(self):                    
+#         #response = self.client.get("/test/" + str(test_id) + "/status/?problem_id=" + str(problem_id) + "&submission_id=" + str(response.submission_id))        
 
-    #session poll
-    @task(90)
-    def session_poll(self):
-        response = self.client.get("/test/" + str(test_id) + "/poll/?current_duration=30" + "&current_extra_time=0")
+#     #session poll
+#     @task(90)
+#     def session_poll(self):
+#         response = self.client.get("/test/" + str(test_id) + "/poll/?current_duration=30" + "&current_extra_time=0")
 
 #class NewUserTasks(TaskSet):
     #Open landing page
@@ -197,7 +197,96 @@ class MyTaskSet(TaskSet):
 
 
 class MyLocust(HttpLocust):
-    host = os.getenv('TARGET_URL', "http://localhost:3000")
-    task_set = MyTaskSet
+    host = os.getenv('TARGET_URL', "https://staging.scaler.com")
     min_wait = 90
     max_wait = 100
+
+
+    def on_start(self):
+        signup(self)
+
+    def on_stop(self):
+        logout(self)
+
+    #open the test programming_language_id
+    @task(6)
+    def index(self):    
+        response = self.client.get("/test/" + test_id + '/')
+
+    #record event
+    # @task(33)
+    # def record_event(self):
+    #     response = self.client.post("/test/" + test_id + '/record-event/',{
+    #         "event_type": "jhsdfgjdsf",
+    #         "event_value": "kjdkjdhfgkjdfhgifderiuy eiruty idufgy difuyg",
+    #         "timestamp": datetime.datetime.now()
+    #     })
+
+    #mark problem opened
+    # @task(13)
+    # def mark_problem_opened(self):
+    #     problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
+    #     response = self.client.post("/test/" + str(test_id) + "/mark-problem-opened/",{
+    #         "problem_id": problem_id
+    #     })
+
+    #get live problems
+    @task(6)
+    def get_live_problems(self):
+        response = self.client.get("/test/" + str(test_id) + "/live-problems/")
+
+    #fetch code
+    # @task(22)
+    # def fetch_code(self):    
+    #     problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
+    #     supported_languages = problem_language_id_map[problem_id]
+    #     programming_language_id = supported_languages[random.randint(0,(len(supported_languages) - 1))]
+    #     response = self.client.get("/test/" + str(test_id) + "/get-code/?programming_language_id=" + str(programming_language_id) + "&problem_id=" + str(problem_id))
+
+    # #save code
+    # @task(52)
+    # def save_code(self):
+    #     problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
+    #     supported_languages = problem_language_id_map[problem_id]
+    #     programming_language_id = 511#supported_languages[random.randint(0,(len(supported_languages) - 1))]
+    #     response = self.client.post("/test/" + str(test_id) + "/save-code/", {
+    #         "problem_id": problem_id, 
+    #         "programming_language_id": 511,
+    #         "is_objective": 'false',
+    #         "problem_code": problem_codes[problem_id][random.choice(random_matrix)]
+    #     })
+
+    # #Submit Code
+    # @task(22)
+    # def submit_code(self):
+    #     problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
+    #     supported_languages = problem_language_id_map[problem_id]
+    #     programming_language_id = supported_languages[random.randint(0,(len(supported_languages) - 1))]
+
+    #     response = self.client.post("/test/" + test_id + "/evaluate-code/", {
+    #         "problem_id": problem_id, 
+    #         "programming_language_id": 511,
+    #         "submission_content": problem_codes[problem_id][random.choice(random_matrix)],
+    #         "submission_type": 'submit'
+    #     }, {
+    #         'X-Requested-With': 'XMLHttpRequest'
+    #     })        
+    #     logger.info(response.content)
+    #     resp_json = json.loads(response.content)
+
+    #     r = Timer(10, check_status, (self, test_id, problem_id, resp_json['submission_id']))
+    #     r.start()
+        #for i in range(1,30):
+            #check_status(self, test_id, problem_id, resp_json['submission_id'])
+            #r = Timer(i, check_status, (self, test_id, problem_id, resp_json['submission_id']))
+            #r.start()
+
+    #get submission status
+    #@task(2400)
+    #def submission_status(self):                    
+        #response = self.client.get("/test/" + str(test_id) + "/status/?problem_id=" + str(problem_id) + "&submission_id=" + str(response.submission_id))        
+
+    #session poll
+    # @task(90)
+    # def session_poll(self):
+    #     response = self.client.get("/test/" + str(test_id) + "/poll/?current_duration=30" + "&current_extra_time=0")
