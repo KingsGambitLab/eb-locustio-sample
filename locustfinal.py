@@ -16,7 +16,15 @@ logger = logging.getLogger(__name__)
 logger.info('INIT')
 
 global test_id
-test_id = '47d0439fbb' #8a2c3d05c2 local, 5645c712df staging
+
+# staging data
+test_id = '039fe767d1'
+test_id_number = 915642
+
+# local data
+test_id = '332c23102d'
+test_id_number = 14515
+
 problem_ids = [228, 382, 900, 1195, 1262]
 program_languages_random_map = [44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 116, 116, 511]
 problem_language_id_map = {
@@ -361,6 +369,7 @@ def set_ib_user():
       'slug': "loadtest-user-" + user_num
     }
 
+
 def login(self, user):
   self.client.post(
     create_url("/users/sign_in/"),
@@ -428,18 +437,19 @@ class SocketClient(object):
       self.connect(self.ws_url)
     elapsed = int((time.time() - start_time) * 1000)
     if e:
-      events.request_failure.fire(
+      events.request.fire(
         request_type='sockjs', name=end_point,
-        response_time=elapsed, exception=e
+        response_time=elapsed, exception=e, success=0
       )
     else:
-      events.request_success.fire(
+      events.request.fire(
         request_type='sockjs', name=end_point,
-        response_time=elapsed, response_length=0
+        response_time=elapsed, response_length=0, success=1
       )
 
 class CompleteTaskSet(TaskSet):
-  ws_host = os.getenv('WS_TARGET_HOST', "ws://localhost:3000")
+  # ws_host = os.getenv('WS_TARGET_HOST', "wss://impact:getshitdone@6.staging.sclr.ac")
+  ws_host = os.getenv('WS_TARGET_HOST', "ws://127.0.0.1:3000")
   warm_up = False
   
   def on_start(self):
@@ -469,6 +479,29 @@ class CompleteTaskSet(TaskSet):
 
   def load_live_test_page(self):
     response = self.client.get(create_url("/test/" + test_id + '/'))
+  
+  def save_candidate_details(self):
+    form_data = {
+      "authenticity_token": "DFYue7fmpZCAxjdY0Exr5KVuufcZQFpckQ/Am+N7OQ8RgPAPKAdgOLnefhoxtCO2qsw0i8lTV3cdNuf+lPYotA==",
+      "candidate_email": self._ib_user['email'],
+      "candidate_name": self._ib_user['email'],
+      "candidate_grad_year": "2024",
+      "disclaimer": "on",
+      "restricted_disclaimer": "on"
+    }
+    response = self.client.post(create_url("/test/" + test_id + "/save-candidate-details/"), data=form_data)
+
+  def dual_camera_init(self):
+    params = {
+      "api_context": {
+        "id": test_id_number,
+        "type": "interviewbit_test"
+      }
+    }
+    response = self.client.get(create_url("/api/v3/proctoring/dual_camera/init"), params=params)
+    
+  def start_test(self):
+    response = self.client.put(create_url("/api/v3/assessments/" + str(test_id_number) + "/session/start/"))
   
   def get_live_test_problems(self):
     gevent.sleep(between(1, 5))
@@ -536,12 +569,12 @@ class CompleteTaskSet(TaskSet):
 
   # Call this to indicate the end of test
   def perform_health_check(self):
-    response = self.client.get(create_url("/health_check/"))
+    response = self.client.get(create_url("/health_check_v3/"))
 
   def load_interview_questions_page(self, url):
     response = self.client.get(create_url("/" + url + "/"))
 
-  # @task
+  @task(10)
   def submission_task(self):
     for i in range(5):
       problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
@@ -549,66 +582,75 @@ class CompleteTaskSet(TaskSet):
 
   @task(100)
   def main_task(self):
-    gevent.sleep(120)
+    gevent.sleep(20)
     if self.warm_up:
       for url in warm_up_urls:
         self.load_interview_questions_page(url)
       return
 
+    # Load Test twice
+    self.load_live_test_page()
+    self.load_live_test_page()
+    
+    gevent.sleep(10)
+    self.save_candidate_details()
+    # self.dual_camera_init()
+    
+    # start the test
+    # self.start_test()
+    
     problems_tested = 0
     for case in range(3):
-      # dispersion_random_matrix = dispersion_random_matrices[case]
-      # self.load_live_test_page()
-      # self.load_live_test_page()
+      dispersion_random_matrix = dispersion_random_matrices[case]
       self.connect_to_socket()
       self.connect_to_socket()
       self.connect_to_socket()
       self.connect_to_socket()
       self.connect_to_socket()
       self.connect_to_socket()
-      # self.get_live_test_problems()
-      # self.get_live_test_problems()
+      self.get_live_test_problems()
+      self.get_live_test_problems()
 
-      # max_problems_per_session = 2
-      # problems_this_session = 0
-      # while problems_tested < len(problem_ids) and problems_this_session < max_problems_per_session:
-      #   problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
-      #   self.mark_problem_opened(problem_id)
+      max_problems_per_session = 2
+      problems_this_session = 0
+      while problems_tested < len(problem_ids) and problems_this_session < max_problems_per_session:
+        problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
+        self.mark_problem_opened(problem_id)
 
-      #   gevent.sleep(between(10, 30))
-      #   for i in range(5):
-      #     buffer = between(0, submission_dispersion)
-      #     gevent.sleep(buffer)
+        gevent.sleep(between(10, 30))
+        for i in range(5):
+          buffer = between(0, submission_dispersion)
+          gevent.sleep(buffer)
 
-      #     self.fetch_code(problem_id)
-      #     gevent.sleep(1)
+          self.fetch_code(problem_id)
+          gevent.sleep(1)
           
-      #     # Considering programming language change
-      #     num_languages = random.choice(language_random_matrix)
-      #     if num_languages > 1:
-      #       self.fetch_code(problem_id)
-      #       gevent.sleep(1)
+          # Considering programming language change
+          num_languages = random.choice(language_random_matrix)
+          if num_languages > 1:
+            self.fetch_code(problem_id)
+            gevent.sleep(1)
 
-      #     self.save_code(problem_id)
-      #     self.submit_code(problem_id)
+          self.save_code(problem_id)
+          self.submit_code(problem_id)
 
-      #     # Asumming 30% users switch problem after a submission
-      #     # 25% because they answered correct
-      #     # 5% because they want to spend time on other problems
-      #     if random.randint(1, 100) <= 30:
-      #       problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
-      #       self.mark_problem_opened(problem_id)
+          # Asumming 30% users switch problem after a submission
+          # 25% because they answered correct
+          # 5% because they want to spend time on other problems
+          if random.randint(1, 100) <= 30:
+            problem_id = problem_ids[random.randint(0,(len(problem_ids) - 1))]
+            self.mark_problem_opened(problem_id)
 
-      #     delay_fraction = dispersion_delays[random.choice(dispersion_random_matrix)]
-      #     gevent.sleep(delay_fraction * (submission_dispersion - buffer))
+          delay_fraction = dispersion_delays[random.choice(dispersion_random_matrix)]
+          gevent.sleep(delay_fraction * (submission_dispersion - buffer))
 
-      #   problems_this_session += 1
-      #   problems_tested += 1
-      # self.record_batch_events()
-    # self.perform_health_check()
+        problems_this_session += 1
+        problems_tested += 1
+      self.record_batch_events()
+    self.perform_health_check()
     logger.info('======COMPLETED MAIN TASK========')
   
-  # @task(10)
+  @task(10)
   def poll_task(self):
     for i in range(10):
       self.session_poll()
@@ -616,7 +658,7 @@ class CompleteTaskSet(TaskSet):
     self.perform_health_check()
     logger.info('======COMPLETED POLL TASK========')
   
-  # @task(5)
+  @task(5)
   def record_events(self):
     for i in range(10):
       self.record_batch_events()
@@ -625,6 +667,7 @@ class CompleteTaskSet(TaskSet):
     logger.info('======COMPLETED RECORD EVENTS TASK========')
 
 class MitUser(HttpUser):
+  # host = os.getenv('TARGET_DOMAIN', "https://impact:getshitdone@6.staging.sclr.ac")
   host = os.getenv('TARGET_DOMAIN', "http://localhost:3000")
   min_wait = 0
   max_wait = 0
